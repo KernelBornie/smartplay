@@ -3,6 +3,7 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
 const path = require('path');
 const songRoutes = require('./routes/songs');
@@ -20,12 +21,21 @@ app.use(morgan('combined'));
 // Serve uploaded files statically
 app.use('/files', express.static(UPLOAD_PATH));
 
-app.use('/songs', songRoutes);
-app.use('/admin', adminRoutes);
-
 app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'music-service', ts: new Date().toISOString() });
 });
+
+const limiter = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
+  max: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' },
+});
+
+app.use(limiter);
+app.use('/songs', songRoutes);
+app.use('/admin', adminRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error(err.stack);

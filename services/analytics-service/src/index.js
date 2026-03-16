@@ -3,6 +3,7 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
 const analyticsRoutes = require('./routes/analytics');
 
@@ -14,11 +15,20 @@ app.use(cors({ origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split('
 app.use(express.json());
 app.use(morgan('combined'));
 
-app.use('/analytics', analyticsRoutes);
-
 app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'analytics-service', ts: new Date().toISOString() });
 });
+
+const limiter = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
+  max: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' },
+});
+
+app.use(limiter);
+app.use('/analytics', analyticsRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error(err.stack);
