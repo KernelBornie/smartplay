@@ -23,3 +23,18 @@ yarn-error.log*
 # Build outputs
 dist/
 build/
+
+# Uploads (local audio files — not committed)
+uploads/*
+!uploads/.gitkeep
+
+# Test coverage
+coverage/
+
+# Vite cache
+.vite/
+
+# App build outputs (per-package)
+apps/web/dist/
+apps/admin/dist/
+services/*/dist/

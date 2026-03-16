@@ -1,0 +1,22 @@
+{
+  "name": "smartplay",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SmartPlay - scalable music streaming monorepo",
+  "workspaces": [
+    "apps/*",
+    "services/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=services/api-gateway\" \"npm run dev --workspace=services/auth-service\" \"npm run dev --workspace=services/music-service\" \"npm run dev --workspace=services/streaming-service\" \"npm run dev --workspace=services/analytics-service\" \"npm run dev --workspace=apps/web\" \"npm run dev --workspace=apps/admin\"",
+    "dev:services": "concurrently \"npm run dev --workspace=services/api-gateway\" \"npm run dev --workspace=services/auth-service\" \"npm run dev --workspace=services/music-service\" \"npm run dev --workspace=services/streaming-service\" \"npm run dev --workspace=services/analytics-service\"",
+    "dev:apps": "concurrently \"npm run dev --workspace=apps/web\" \"npm run dev --workspace=apps/admin\"",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "start": "npm run start --workspaces --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
