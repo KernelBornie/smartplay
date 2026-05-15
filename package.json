@@ -1,0 +1,17 @@
+{
+  "name": "smartplay",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently --kill-others --names \"GATEWAY,AUTH,MUSIC,STREAM,ANALYTICS,WEB,ADMIN\" --prefix-colors \"blue,red,green,cyan,magenta,yellow,gray\" \"npm run dev -w @smartplay/api-gateway\" \"npm run dev -w @smartplay/auth-service\" \"npm run dev -w @smartplay/music-service\" \"npm run dev -w @smartplay/streaming-service\" \"npm run dev -w @smartplay/analytics-service\" \"npm run dev -w @smartplay/web\" \"npm run dev -w @smartplay/admin\"",
+    "dev:services": "concurrently --kill-others --names \"GATEWAY,AUTH,MUSIC,STREAM,ANALYTICS\" --prefix-colors \"blue,red,green,cyan,magenta\" \"npm run dev -w @smartplay/api-gateway\" \"npm run dev -w @smartplay/auth-service\" \"npm run dev -w @smartplay/music-service\" \"npm run dev -w @smartplay/streaming-service\" \"npm run dev -w @smartplay/analytics-service\"",
+    "dev:apps": "concurrently --kill-others --names \"WEB,ADMIN\" --prefix-colors \"yellow,gray\" \"npm run dev -w @smartplay/web\" \"npm run dev -w @smartplay/admin\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  }
+}
