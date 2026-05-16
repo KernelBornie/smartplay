@@ -14,9 +14,7 @@ process.env.SERVICE_NAME = 'api-gateway';
 validateEnv();
 
 const app = express();
-
 app.set('trust proxy', 1);
-
 const PORT = parseInt(process.env.PORT, 10) || 3000;
 
 app.use(helmet({
@@ -25,12 +23,7 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'https://smartplay.vercel.app',
-    'https://smartplay-admin.vercel.app'
-  ],
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'https://smartplay.vercel.app', 'https://smartplay-admin.vercel.app'],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id', 'x-correlation-id']
 }));
@@ -38,8 +31,7 @@ app.use(cors({
 const globalLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 900000,
   max: parseInt(process.env.RATE_LIMIT_MAX, 10) || 100,
-  standardHeaders: true,
-  legacyHeaders: false,
+  standardHeaders: true, legacyHeaders: false,
   message: { success: false, error: { message: 'Too many requests', code: 'RATE_LIMIT' } }
 });
 app.use(globalLimiter);
@@ -47,8 +39,7 @@ app.use(globalLimiter);
 const authLimiter = rateLimit({
   windowMs: 900000,
   max: parseInt(process.env.AUTH_RATE_LIMIT_MAX, 10) || 20,
-  standardHeaders: true,
-  legacyHeaders: false,
+  standardHeaders: true, legacyHeaders: false,
   message: { success: false, error: { message: 'Too many auth attempts', code: 'AUTH_RATE_LIMIT' } }
 });
 
@@ -69,12 +60,10 @@ app.use((req, res, next) => {
 
 app.get('/health', require('./routes/health'));
 
-// ── Direct auth handler (more reliable than proxy on Render free tier) ──
-const authServiceUrl = 'http://localhost:3001';
-
+// ── Direct auth handler ──
 app.use('/auth', authLimiter, async (req, res, next) => {
   try {
-    const url = authServiceUrl + req.originalUrl.replace('/auth', '');
+    const url = 'http://localhost:3001' + req.originalUrl.replace('/auth', '');
     const response = await axios({
       method: req.method,
       url: url,
@@ -101,65 +90,40 @@ app.use('/auth', authLimiter, async (req, res, next) => {
     logger.error('Auth handler error', { error: err.message, path: req.originalUrl });
     next(err);
   }
-}));
+});
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/music', createProxyMiddleware({
-  target: 'http://localhost:3002',
-  changeOrigin: true,
-  pathRewrite: { '^/api/music': '' },
-  proxyTimeout: 30000,
-  timeout: 30000,
+  target: 'http://localhost:3002', changeOrigin: true, pathRewrite: { '^/api/music': '' },
+  proxyTimeout: 30000, timeout: 30000,
   on: {
-    proxyReq: (proxyReq, req) => {
-      if (req.requestId) proxyReq.setHeader('x-request-id', req.requestId);
-    },
+    proxyReq: (proxyReq, req) => { if (req.requestId) proxyReq.setHeader('x-request-id', req.requestId); },
     error: (err, req, res) => {
-      if (!res.headersSent) {
-        res.status(502).json({
-          success: false,
-          error: { message: 'Service temporarily unavailable', code: 'SERVICE_DOWN' },
-          requestId: req.requestId
-        });
-      }
+      if (!res.headersSent) res.status(502).json({ success: false, error: { message: 'Service temporarily unavailable' }, requestId: req.requestId });
     }
   }
 }));
 
 app.use('/api/stream', createProxyMiddleware({
-  target: 'http://localhost:3003',
-  changeOrigin: true,
-  pathRewrite: { '^/api/stream': '' },
-  proxyTimeout: 30000,
-  timeout: 30000,
+  target: 'http://localhost:3003', changeOrigin: true, pathRewrite: { '^/api/stream': '' },
+  proxyTimeout: 30000, timeout: 30000,
   on: {
-    proxyReq: (proxyReq, req) => {
-      if (req.requestId) proxyReq.setHeader('x-request-id', req.requestId);
-    },
+    proxyReq: (proxyReq, req) => { if (req.requestId) proxyReq.setHeader('x-request-id', req.requestId); },
     error: (err, req, res) => {
-      if (!res.headersSent) {
-        res.status(502).json({ success: false, error: { message: 'Service temporarily unavailable' } });
-      }
+      if (!res.headersSent) res.status(502).json({ success: false, error: { message: 'Service temporarily unavailable' } });
     }
   }
 }));
 
 app.use('/api/analytics', createProxyMiddleware({
-  target: 'http://localhost:3004',
-  changeOrigin: true,
-  pathRewrite: { '^/api/analytics': '' },
-  proxyTimeout: 30000,
-  timeout: 30000,
+  target: 'http://localhost:3004', changeOrigin: true, pathRewrite: { '^/api/analytics': '' },
+  proxyTimeout: 30000, timeout: 30000,
   on: {
-    proxyReq: (proxyReq, req) => {
-      if (req.requestId) proxyReq.setHeader('x-request-id', req.requestId);
-    },
+    proxyReq: (proxyReq, req) => { if (req.requestId) proxyReq.setHeader('x-request-id', req.requestId); },
     error: (err, req, res) => {
-      if (!res.headersSent) {
-        res.status(502).json({ success: false, error: { message: 'Service temporarily unavailable' } });
-      }
+      if (!res.headersSent) res.status(502).json({ success: false, error: { message: 'Service temporarily unavailable' } });
     }
   }
 }));
