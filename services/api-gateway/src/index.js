@@ -13,19 +13,31 @@ process.env.SERVICE_NAME = 'api-gateway';
 validateEnv();
 
 const app = express();
+
+// Trust the proxy so rate‑limiting works correctly behind tunnels
+app.set('trust proxy', 1);
+
 const PORT = parseInt(process.env.PORT, 10) || 3000;
 
+// ── Security headers (allow cross‑origin resources for streaming) ────
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
   contentSecurityPolicy: false
 }));
+
+// ── CORS – allow any origin while using a tunnel (the tunnel is secure) ──
 app.use(cors({
-  origin: (process.env.CORS_ORIGIN || 'http://localhost:5173').split(','),
-  credentials: true,
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'https://smartplay.vercel.app',
+    'https://YOUR_VERCEL_DOMAIN.vercel.app'
+  ],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id', 'x-correlation-id']
 }));
 
+// ── Rate limiting ────────────────────────────────────────────────────
 const globalLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 900000,
   max: parseInt(process.env.RATE_LIMIT_MAX, 10) || 100,
@@ -43,6 +55,7 @@ const authLimiter = rateLimit({
   message: { success: false, error: { message: 'Too many auth attempts', code: 'AUTH_RATE_LIMIT' } }
 });
 
+// ── Request ID and logging ────────────────────────────────────────────
 app.use(requestId);
 
 app.use((req, res, next) => {
@@ -58,8 +71,10 @@ app.use((req, res, next) => {
   next();
 });
 
+// ── Health check ──────────────────────────────────────────────────────
 app.get('/health', require('./routes/health'));
 
+// ── Auth proxy (must be before the JSON body parser) ──────────────────
 app.use('/auth', authLimiter, createProxyMiddleware({
   target: 'http://localhost:3001',
   changeOrigin: true,
@@ -83,9 +98,11 @@ app.use('/auth', authLimiter, createProxyMiddleware({
   }
 }));
 
+// ── Body parsing (for routes that are not proxied) ────────────────────
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// ── Service proxies ───────────────────────────────────────────────────
 app.use('/api/music', createProxyMiddleware({
   target: 'http://localhost:3002',
   changeOrigin: true,
@@ -144,9 +161,11 @@ app.use('/api/analytics', createProxyMiddleware({
   }
 }));
 
+// ── Admin routes ──────────────────────────────────────────────────────
 app.use('/admin', require('./routes/admin'));
 app.use(errorHandler);
 
+// ── Start server ──────────────────────────────────────────────────────
 async function start() {
   try {
     await connectDB();
@@ -162,4 +181,11 @@ async function start() {
 }
 
 start();
+module.exports = app;
+
+// ── Start server ──
+if (require.main === module) {
+  start();
+}
+
 module.exports = app;
