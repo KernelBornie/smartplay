@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const axios = require('axios');
 const {
   requestId, errorHandler, gracefulShutdown, logger, connectDB, validateEnv
 } = require('@smartplay/shared');
@@ -68,26 +69,37 @@ app.use((req, res, next) => {
 
 app.get('/health', require('./routes/health'));
 
-app.use('/auth', authLimiter, createProxyMiddleware({
-  target: 'http://localhost:3001',
-  changeOrigin: true,
-  pathRewrite: { '^/auth': '' },
-  proxyTimeout: 30000,
-  timeout: 30000,
-  on: {
-    proxyReq: (proxyReq, req) => {
-      if (req.requestId) proxyReq.setHeader('x-request-id', req.requestId);
-    },
-    error: (err, req, res) => {
-      logger.error('Auth proxy error', { error: err.message, path: req.originalUrl });
-      if (!res.headersSent) {
-        res.status(502).json({
-          success: false,
-          error: { message: 'Service temporarily unavailable', code: 'SERVICE_DOWN' },
-          requestId: req.requestId
-        });
-      }
+// ── Direct auth handler (more reliable than proxy on Render free tier) ──
+const authServiceUrl = 'http://localhost:3001';
+
+app.use('/auth', authLimiter, async (req, res, next) => {
+  try {
+    const url = authServiceUrl + req.originalUrl.replace('/auth', '');
+    const response = await axios({
+      method: req.method,
+      url: url,
+      data: req.body,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-request-id': req.requestId,
+        'Authorization': req.headers.authorization || ''
+      },
+      timeout: 30000
+    });
+    res.status(response.status).json(response.data);
+  } catch (err) {
+    if (err.code === 'ECONNREFUSED' || err.code === 'ECONNABORTED') {
+      return res.status(502).json({
+        success: false,
+        error: { message: 'Service temporarily unavailable', code: 'SERVICE_DOWN' },
+        requestId: req.requestId
+      });
     }
+    if (err.response) {
+      return res.status(err.response.status).json(err.response.data);
+    }
+    logger.error('Auth handler error', { error: err.message, path: req.originalUrl });
+    next(err);
   }
 }));
 
@@ -155,7 +167,6 @@ app.use('/api/analytics', createProxyMiddleware({
 app.use('/admin', require('./routes/admin'));
 app.use(errorHandler);
 
-// ── Start server ──
 async function start() {
   try {
     await connectDB();
