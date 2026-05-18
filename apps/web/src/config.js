@@ -1,2 +1,1 @@
-const BASE_URL = import.meta.env.VITE_API_URL;
-export default BASE_URL;
+const BASE_URL = 'https://smartplay-api.onrender.com'; export default BASE_URL; 

@@ -2,9 +2,13 @@
   "name": "@smartplay/api-gateway",
   "version": "1.0.0",
   "private": true,
+  "main": "src/index.js",
   "scripts": {
     "dev": "node src/index.js",
-    "start": "NODE_ENV=production node src/index.js"
+    "start": "node src/index.js"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "dependencies": {
     "@smartplay/shared": "*",
@@ -12,6 +16,7 @@
     "express": "^4.19.2",
     "express-rate-limit": "^7.3.1",
     "helmet": "^7.1.0",
-    "http-proxy-middleware": "^3.0.0"
+    "http-proxy-middleware": "^3.0.0",
+    "axios": "^1.6.0"
   }
 }
