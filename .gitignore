@@ -40,3 +40,9 @@ temp/
 
 # render/vercel
 .render/
+dist/
+build/
+.vite/
+node_modules/
+apps/*/dist/
+apps/*/node_modules/
