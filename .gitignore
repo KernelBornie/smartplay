@@ -1,12 +1,17 @@
 # dependencies
 node_modules/
-.pnpm-store/
+**/node_modules/
 
-# env files
-.env
-.env.local
-.env.production
-.env.development
+# build files
+dist/
+build/
+coverage/
+.next/
+.out/
+
+# vite
+.vite/
+.vite-cache/
 
 # logs
 logs
@@ -15,15 +20,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# build
-dist/
-build/
-.next/
-.vercel/
-
-# uploads
-uploads/
-storage/
+# env
+.env
+.env.*
+!.env.example
 
 # OS
 .DS_Store
@@ -33,16 +33,20 @@ Thumbs.db
 .vscode/
 .idea/
 
+# uploads
+uploads/
+temp/
+tmp/
+
 # cache
 .cache/
-.tmp/
-temp/
+.parcel-cache/
 
 # render/vercel
+.vercel/
 .render/
-dist/
-build/
-.vite/
-node_modules/
-apps/*/dist/
-apps/*/node_modules/
+
+# lock files optional
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
